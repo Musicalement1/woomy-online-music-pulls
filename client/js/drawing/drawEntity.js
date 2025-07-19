@@ -1748,7 +1748,7 @@ let drawEntity = function () {
 		if (fade === 0 || alpha === 0) return;
 		if (config.lerpSize) drawSize = drawSize*fade;
 		ctx.globalAlpha = (config.glassMode ? .7 : 1);
-        if (alpha !== 1) {
+        if (alpha !== 1 && turretInfo === 0) {
             context = ctx2;
             context.canvas.width = Math.max(context.canvas.height = drawSize * m.position.axis + ratio * 7.5 * instance.size, 1); //20,100
             xx = context.canvas.width / 2 - drawSize * 2 * m.position.axis * m.position.middle.x * Math.cos(rot) / 4;
@@ -2079,7 +2079,7 @@ let drawEntity = function () {
 			}
 		}
 		ctx.globalAlpha = 1
-		if (context !== ctx) {
+		if (context !== ctx && turretInfo === 0) {
             if (context.canvas.width && context.canvas.height) {
                 ctx.save();
                 ctx.globalAlpha = alpha * fade;
