@@ -79,7 +79,7 @@ joinButton.onclick = function () {
 	openJoinScreen(true);
 	if (global._disconnected && global._gameStart) return;
 	window.gameLaunched = true;
-	_startGame(selectedGamemode, gamemodeName, selectedRoomId);
+	_startGame(selectedGamemode, selectedRoomId);
 }
 document.addEventListener("keydown", function eh (e) {
 	if (global._disconnected && global._gameStart) return;

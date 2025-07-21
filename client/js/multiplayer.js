@@ -134,12 +134,13 @@ multiplayer.getRooms = async function (){
 	res = await res.json()
 	return res;
 }
-multiplayer.startServerWorker = async function (gamemodeCode, gamemodeName) {
+multiplayer.startServerWorker = async function (gamemodeCode, displayNameOverride, displayDescOverride) {
 	window.serverWorker.postMessage({
 		type: "startServer",
 		server: {
 			suffix: gamemodeCode,
-			gamemode: gamemodeName,
+			displayName: displayNameOverride,
+			displayDesc: displayDescOverride
 		}
 	});
 	let startPromise = new Promise((res, rej) => {

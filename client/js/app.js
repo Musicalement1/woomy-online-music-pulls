@@ -118,7 +118,7 @@ function RememberScriptingIsBannable() {
 
 util._retrieveFromLocalStorage("nameInput")
 util._retrieveFromLocalStorage("tokenInput")
-async function _startGame(gamemodeCode, gamemodeName, joinRoomId) {
+async function _startGame(gamemodeCode, joinRoomId) {
     if (!global.animLoopHandle) _animloop();
     document.getElementById("mainWrapper").style.zIndex = -100;
     global.playerName = util._cleanString(document.getElementById("nameInput").value || "", 25)
@@ -132,7 +132,7 @@ async function _startGame(gamemodeCode, gamemodeName, joinRoomId) {
         window.loadingTextStatus = "Starting server..."
         window.loadingTextTooltip = ""
         console.log("Starting server...")
-        await multiplayer.startServerWorker(gamemodeCode, gamemodeName)
+        await multiplayer.startServerWorker(gamemodeCode)
         console.log("...Server started!")
         await multiplayer.wrmHost()
         joinRoomId = await multiplayer.getHostRoomId();

@@ -26,7 +26,7 @@ worker.onmessage = function (msg) {
                 worker.postMessage({ type: "serverStartText", text: "Loading definitions..." })
                 global.initExportCode = res.initExportCode
                 console.log(data.server)
-                startServer(data.server.suffix, data.server.gamemode, res.defExports)
+                startServer(data.server.suffix, res.defExports, data.server.displayName, data.server.displayDesc)
             }).catch((err) => {
                 console.error(err)
                 worker.postMessage({ type: "serverStartText", text: "Error loading definitons", tip: "Please reload the page and try again" })
@@ -922,7 +922,7 @@ global.require = function (thing) {
 
 // THE SERVER //
 
-async function startServer(configSuffix, serverGamemode, defExports) {
+async function startServer(configSuffix, defExports, displyNameOverride, displayDescOverride) {
     //configSuffix = "blackout4tdm.json" 
     /*jslint node: true */
     /*jshint -W061 */
@@ -1732,8 +1732,8 @@ const Chain = Chainf;
                 this.maxSancs = config.MAX_SANCS;
                 this.skillBoost = config.SKILL_BOOST;
                 this.topPlayerID = -1;
-				this.displayName = config.displayName||"";
-				this.displayDesc = config.displayDesc||"";
+				this.displayName = displyNameOverride||config.displayName||"";
+				this.displayDesc = displayDescOverride||config.displayDesc||"";
                 this.arenaClosed = false;
                 this.teamAmount = c.TEAM_AMOUNT;
                 this.modelMode = c.modelMode;
