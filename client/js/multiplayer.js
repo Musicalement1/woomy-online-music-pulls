@@ -155,7 +155,7 @@ multiplayer.startServerWorker = async function (gamemodeCode, gamemodeName) {
 						console.error(`Peer ${data.playerId} does not exist`)
 						return;
 					}
-					peer.send(fasttalk.encode(data.data));
+					peer.send(data.data);
 					break;
 
 				case "updatePlayers":

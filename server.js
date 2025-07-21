@@ -1,13 +1,12 @@
 // COMPAT //
-const worker = self
-let workerWindow = worker
+const worker = typeof parentPort==="undefined"?self:parentPort
+if(typeof global === "undefined") global = worker
+if(typeof fs === "undefined") fs = undefined;
 
-global = workerWindow;
 global.utility = {
     log: (e) => { console.log("[LOG]", e) }
 }
-
-workerWindow.process = {
+global.process = {
     env: {},
     argv: []
 };
@@ -37,7 +36,7 @@ worker.onmessage = function (msg) {
             userSockets.get(data.data[0]).onmessage(data.data[1])
             break;
         case "playerJoin":
-            workerWindow.sockets.connect(data.playerId)
+            global.sockets.connect(data.playerId)
             break;
         case "playerDc":
             userSockets.get(data.playerId).close()
@@ -51,7 +50,7 @@ worker.onmessage = function (msg) {
     }
 }
 
-function userSocket(playerId) {
+function userSocket(playerId, encode) {
     return {
         on: (type, funct) => {
             if (type === "message") {
@@ -59,7 +58,7 @@ function userSocket(playerId) {
             }
         },
         send: (e) => {
-            worker.postMessage({ type: "clientMessage", playerId: playerId, data: e })
+            worker.postMessage({ type: "clientMessage", playerId: playerId, data: encode(e) })
         }
     }
 };
@@ -106,7 +105,7 @@ Object.defineProperty(Math, 'atan2', {
 function oddify(number, multiplier = 1) {
     return number + ((number % 2) * multiplier);
 }
-workerWindow.mapConfig = {
+global.mapConfig = {
     getBaseShuffling: function (teams, max = 5) {
         const output = [];
         for (let i = 1; i < max; i++) {
@@ -167,7 +166,7 @@ workerWindow.mapConfig = {
     }
 }
 
-workerWindow.require = function (thing) {
+global.require = function (thing) {
     switch (thing) {
         case "../../lib/util.js":
         case "./util.js":
@@ -1099,7 +1098,7 @@ async function startServer(configSuffix, serverGamemode, defExports) {
 
     const webhooks = (function () {
         const https = require("https");
-        let private = {
+        let private_ = {
             keys: {
                 // USA
                 "a": "/api/webhooks/1018582651147403284/pPuQBkSl7hSF5M3L9mBefvQf7ahDyi85kz2KGIuQm8FhS3FrjxYk9kuqLrCuheDL7Elk",
@@ -1128,7 +1127,7 @@ async function startServer(configSuffix, serverGamemode, defExports) {
             queue: [],
             lastSend: 0,
             send(data) {
-                let path = private.keys[process.env.HASH || "z"] || private.keys.default;
+                let path = private_.keys[process.env.HASH || "z"] || private_.keys.default;
                 let req = https.request({
                     hostname: 'discordapp.com',
                     path,
@@ -1144,18 +1143,18 @@ async function startServer(configSuffix, serverGamemode, defExports) {
             },
             publish(force) {
                 let output = "";
-                if (private.queue.length < 3 && Date.now() - private.lastSend < 10000 && !force) {
+                if (private_.queue.length < 3 && Date.now() - private_.lastSend < 10000 && !force) {
                     return;
                 }
-                private.lastSend = Date.now();
-                while (private.queue.length > 0) {
-                    if (output + "\n" + private.queue[0] > 2000) {
-                        private.send(output);
+                private_.lastSend = Date.now();
+                while (private_.queue.length > 0) {
+                    if (output + "\n" + private_.queue[0] > 2000) {
+                        private_.send(output);
                         return;
                     }
-                    output += "\n" + private.queue.shift();
+                    output += "\n" + private_.queue.shift();
                 }
-                private.send(output);
+                private_.send(output);
             },
             log(data, force) {
                 data = data + "";
@@ -1163,21 +1162,21 @@ async function startServer(configSuffix, serverGamemode, defExports) {
                 data = data.trim();
                 if (data.length > 2000) {
                     while (data.length) {
-                        private.send(data.slice(0, 2000).trim());
+                        private_.send(data.slice(0, 2000).trim());
                         data = data.slice(2000).trim();
                     }
                     return;
                 }
-                private.queue.push(data);
+                private_.queue.push(data);
                 if (force) {
-                    private.publish(true);
+                    private_.publish(true);
                 }
             }
         };
-        //setInterval(private.publish, 5000);
+        //setInterval(private_.publish, 5000);
         return {
             log: (data, force) => {
-                //private.log('[' + util.getLogTime() + ']: ' + data, force);
+                //private_.log('[' + util.getLogTime() + ']: ' + data, force);
             }
         }
     })();
@@ -1543,14 +1542,20 @@ const Chain = Chainf;
         }
 
         let gamemodeConfig = {};
-        let res = await fetch("./configs/config-" + configSuffix)
-        if (configSuffix.includes(".json")) {
-            gamemodeConfig = await res.json()
-        } else if (configSuffix.includes(".js")) {
-            gamemodeConfig = eval(await res.text())
-        } else {
-            console.error("Invalid gamemode file type " + configSuffix)
-        }
+		const configUrl = "./configs/config-" + configSuffix
+        let res = undefined;
+		if(!fs){
+			res = await fetch(configUrl)
+        	if (configSuffix.includes(".json")) {
+        	    gamemodeConfig = await res.json()
+       		} else if (configSuffix.includes(".js")) {
+        	    gamemodeConfig = eval(await res.text())
+        	} else {
+        	    console.error("Invalid gamemode file type " + configSuffix)
+        	}
+		}else{
+			res = fs.readFileSync(configUrl)
+		}
         if (gamemodeConfig.selectable === false) {
             worker.postMessage({ type: "serverStartText", text: "This gamemode is not selectable", tip: "Only modded versions of the game can start a Modded server. Please select a different mode." })
             return;
@@ -2677,7 +2682,6 @@ const Chain = Chainf;
                 for (let key in my) {
                     if (key.startsWith("UPGRADES_TIER")) {
                         my[key].forEach(add);
-                        flag = 1;
                     }
                 }
             }
@@ -5629,8 +5633,7 @@ const Chain = Chainf;
                 "nigg",
                 "trann",
                 "troon"
-            ]
-        sanctuaries = [];
+            ];
         let grid = new HashGrid();/*new QuadTree({
         x: 0,
         y: 0,
@@ -8333,7 +8336,7 @@ function flatten(data, out, playerContext = null) {
                     util.log("New socket initiated!");
                     userSockets.set(playerId, this)
                     this.id = id++;
-                    this._socket = userSocket(playerId);
+                    this._socket = userSocket(playerId, protocol.encode);
                     this.sentPackets = 0
                     this.receivedPackets = 0
                     this.camera = {
@@ -10281,7 +10284,7 @@ function flatten(data, out, playerContext = null) {
                 }
             }
         })();
-        workerWindow.sockets = sockets
+        global.sockets = sockets
 
         const gameLoop = (() => {
             const collide = (() => {
