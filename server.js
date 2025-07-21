@@ -8763,7 +8763,7 @@ function flatten(data, out, playerContext = null) {
                                 return 1;
                             }
 
-                            if (players.length === 0) {
+                            if (fs === undefined && players.length === 0) {
                                 this.betaData = {
                                     permissions: 3,
                                     nameColor: "#ffa600",
