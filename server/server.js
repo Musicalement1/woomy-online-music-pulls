@@ -1545,10 +1545,9 @@ const Chain = Chainf;
         }
 
         let gamemodeConfig = {};
-		const configUrl = "../configs/config-" + configSuffix
         let res = undefined;
 		if(!fs){
-			res = await fetch(configUrl)
+			res = await fetch("../configs/config-" + configSuffix)
         	if (configSuffix.includes(".json")) {
         	    gamemodeConfig = await res.json()
        		} else if (configSuffix.includes(".js")) {
@@ -1557,7 +1556,7 @@ const Chain = Chainf;
         	    console.error("Invalid gamemode file type " + configSuffix)
         	}
 		}else{
-			res = fs.readFileSync(configUrl, "utf8")
+			res = fs.readFileSync("./configs/config-" + configSuffix, "utf8")
 			if (configSuffix.includes(".json")) {
         	    gamemodeConfig = JSON.parse(res)
        		} else if (configSuffix.includes(".js")) {
