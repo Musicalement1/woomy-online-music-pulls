@@ -161,9 +161,25 @@ const rewardManager = new class {
 	// <3
 	openThankYou() {
 		document.getElementById("achievementsClose").click();
+		const popup = document.createElement("div")
+		popup.classList.add("achievementsHolder")
 		popup.style.display = "block";
-		popupTitle.textContent = "Thank you, King.";
-		popupMessage.textContent = "Welcome to the game, welcome to the end of the game.\n\nThe King have completed every challange this game has to offer. The King has won the 4th war. The King would not give up, no matter what was in his way.\nThe King is the Player.\nYou are the player.\nYou have pushed through absolutely everything.\n\nGood Job, King.\n\nFor real though, thanks for playing this much. We hope you enjoyed and loved this game as much as we do.\n-- From Jekyll, and the rest of the dev team";
+		const h1 = document.createElement("h1");
+		h1.textContent = "Thank you, King.";
+		popup.appendChild(h1)
+		const p = document.createElement("p");
+		p.textContent = "You've made it to the very end of the game. As I write this, I cannot imagine anyone collecting every single achievement in the game. Yet here you are, unwavering and strong, having to go through countless hours and undoubtable hardships, you have finally made it. All for what? Is there an intense passion for the game within you? Are you looking for recognition? Or, do you not know why?\n\nThere are many things to experience in life, even if most are mundane. Dont get so lost in your own little world such that reality fades away. Thank you for your love and dedication. - Drako Hyena";
+		popup.appendChild(p)
+		const button = document.createElement("a")
+		button.innerHTML = "Close"
+		button.style.background = "#2bab2f";
+		button.style.width = "100px;";
+		button.href = "javascript:void(0)";
+		button.onclick = function(){
+			popup.remove()
+		};
+		popup.appendChild(button)
+		document.body.appendChild(popup)
 	}
 };
 export { rewardManager }
