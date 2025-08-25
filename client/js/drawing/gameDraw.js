@@ -806,7 +806,7 @@ let gameDraw = function (ratio) {
 
 	if (global.player.lsd) {
 		ctx.filter = `hue-rotate(${Math.sin(Date.now() / 600) * 360}deg)`;
-		ctx.drawImage(c, 0, 0, global._screenWidth, global._screenHeight);
+		ctx.drawImage(global._canvas._cv, 0, 0, global._screenWidth, global._screenHeight);
 		ctx.filter = "none";
 	}
 
