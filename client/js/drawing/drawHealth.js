@@ -19,16 +19,16 @@ import { config } from "../config.js";
 import { global } from "../global.js";
 
 function drawHealth(x, y, instance, ratio, alpha) {
+	let health = instance.render.health.get(),
+		shield = instance.render.shield.get();
 	let fade = instance.render.status.getFade(instance.size);
-	ctx.globalAlpha = 1 * fade;
+	ctx.globalAlpha = fade;
 	let size = instance.render.size * ratio,
 		m = mockups.get(instance.index),
 		realSize = size / m.size * m.realSize;
-	let health = instance.render.health.get(),
-		shield = instance.render.shield.get();
-	if (health < 1 || shield < 1) {
+	if (health * shield < .99) {
 		let yy = y + 1.1 * realSize + 22;
-		ctx.globalAlpha = alpha*fade*(health === 0?0:1);
+		ctx.globalAlpha = (1 - (health * shield - 0.96) / 0.04) * (alpha*fade)*(health === 0?0:1);
 		size *= 1.1;
 		let mixc = config.coloredHealthBars ? mixColors(getColor(instance.color), color.guiwhite, .5) : config.tintedHealth ? mixColors(color.lgreen, color.red, 1 - health) : color.lgreen;
 		if (config.shieldbars) {
