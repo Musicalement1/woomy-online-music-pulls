@@ -1322,6 +1322,10 @@ let drawEntity = function () {
 							path = new Path2D('M 100000000 0 l 0 0');
 							radiusDiv = 1;
 							break;
+						case 325: // half a hexagon
+							path = new Path2D("M -0.5 -0.75 L 0.5 -0.75 L 0.9 0 L -0.9 0 L -0.5 -0.75");
+							radiusDiv = .9;
+							break;
 					}
 					path2dCache.set(sides, { path, radiusDiv })
 					radius /= radiusDiv;
@@ -1898,7 +1902,7 @@ let drawEntity = function () {
 		if (instance.leash) {
 			currentContext.save();
 			currentContext.strokeStyle = "black";
-			currentContext.lineWidth = instance.size*.6*fade
+			currentContext.lineWidth = instance.size*.45*fade
 			currentContext.globalAlpha = .25*fade; 
 			const renderedAnchorX = instance.render?.x ?? instance.x;
 			const renderedAnchorY = instance.render?.y ?? instance.y;
@@ -1915,16 +1919,12 @@ let drawEntity = function () {
 					currentPoint.vel.y += (nextPoint.pos.y - currentPoint.pos.y) * .5;
 				}
 				if (i === 0) {
-					currentPoint.pos.x = renderedAnchorX;
-					currentPoint.pos.y = renderedAnchorY;
-					currentPoint.vel.x = 0;
-					currentPoint.vel.y = 0;
+					currentPoint.vel.x = (renderedAnchorX-currentPoint.pos.x) * .75;
+					currentPoint.vel.y = (renderedAnchorY-currentPoint.pos.y) * .75;
 				}
 				if (i === instance.leash.points.length - 1) {
-					currentPoint.pos.x = instance.leash.x;
-					currentPoint.pos.y = instance.leash.y;
-					currentPoint.vel.x = 0;
-					currentPoint.vel.y = 0;
+					currentPoint.vel.x += (instance.leash.x-currentPoint.pos.x) * .75;
+					currentPoint.vel.y += (instance.leash.y-currentPoint.pos.y) * .75;
 				}
 			}
 

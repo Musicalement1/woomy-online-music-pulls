@@ -219,7 +219,7 @@ const process = function () {
 						entity.leash = {x: 0, y: 0, points: []};
 						entity.leash.x = convert.reader.next()
 						entity.leash.y = convert.reader.next()
-						for(let i = 0; i < 15; i++){
+						for(let i = 0; i < 11; i++){
 							entity.leash.points.push(new RopePoint((entity.x+entity.leash.x)/2, (entity.y+entity.leash.y)/2))
 						}
 					}else{

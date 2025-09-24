@@ -4187,6 +4187,7 @@ const Chain = Chainf;
 				this.range = range;
 			}
 			think() {
+				if(!this.body.source.isAlive()) return;
 				if(!this.body.leash) this.body.leash = {x: 0, y: 0, range: this.range};
 				this.body.leash.x = this.body.source.x;
 				this.body.leash.y = this.body.source.y;
