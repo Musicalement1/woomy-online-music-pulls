@@ -1761,11 +1761,11 @@ let drawEntity = function () {
 
 
 			if (path) {
-	            if (p.stroke) ctx.stroke(path);
+	            ctx.stroke(path);
 	            if (p.fill) ctx.fill(path);
 	        } else {
 	            if (p.loop) ctx.closePath();
-	            if (p.stroke) ctx.stroke();
+	            ctx.stroke();
 	            if (p.color >= 1000) {
 	                ctx.save();
 	                ctx.clip();
@@ -1981,6 +1981,7 @@ let drawEntity = function () {
 				let pColor = getColor(p.color == -1 ? instance.color : p.color);
 				if (invulnTicker) pColor = mixColors(pColor, color.vlgrey, .5);
 				setColors(currentContext, pColor);
+				if(!p.stroke) currentContext.strokeStyle = currentContext.fillStyle;
 				if (p.layer === -2) drawProp(currentContext, p, pColor, adjustedRot, tankDrawX, tankDrawY, drawSize, m, source);
 			}
 		}
@@ -2006,6 +2007,7 @@ let drawEntity = function () {
 				let pColor = getColor(p.color == -1 ? instance.color : p.color);
 				if (invulnTicker) pColor = mixColors(pColor, color.vlgrey, .5);
 				setColors(currentContext, pColor);
+				if(!p.stroke) currentContext.strokeStyle = currentContext.fillStyle;
 				if (p.layer === -1) drawProp(currentContext, p, pColor, adjustedRot, tankDrawX, tankDrawY, drawSize, m, source);
 			}
 		}
@@ -2080,6 +2082,7 @@ let drawEntity = function () {
 				let pColor = mixColors(getColor(p.color == -1 ? instance.color : p.color), renderColor, renderBlend);
 				if (invulnTicker) pColor = mixColors(pColor, color.vlgrey, .5);
 				setColors(currentContext, pColor);
+				if(!p.stroke) currentContext.strokeStyle = currentContext.fillStyle;
 				if (p.layer === 0) drawProp(currentContext, p, pColor, adjustedRot, tankDrawX, tankDrawY, drawSize, m, source);
 			}
 		}
@@ -2105,6 +2108,7 @@ let drawEntity = function () {
 				let pColor = mixColors(getColor(p.color == -1 ? instance.color : p.color), renderColor, renderBlend);
 				if (invulnTicker) pColor = mixColors(pColor, color.vlgrey, .5);
 				setColors(currentContext, pColor);
+				if(!p.stroke) currentContext.strokeStyle = currentContext.fillStyle;
 				if (p.layer === 1) drawProp(currentContext, p, pColor, adjustedRot, tankDrawX, tankDrawY, drawSize, m, source);
 			}
 		}
@@ -2129,6 +2133,7 @@ let drawEntity = function () {
 				let pColor = mixColors(getColor(p.color == -1 ? instance.color : p.color), renderColor, renderBlend);
 				if (invulnTicker) pColor = mixColors(pColor, color.vlgrey, .5);
 				setColors(currentContext, pColor);
+				if(!p.stroke) currentContext.strokeStyle = currentContext.fillStyle;
 				if (p.layer === 2) drawProp(currentContext, p, pColor, adjustedRot, tankDrawX, tankDrawY, drawSize, m, source);
 			}
 		}

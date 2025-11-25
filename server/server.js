@@ -4421,14 +4421,18 @@ const Chain = Chainf;
             constructor(body) {
                 super(body);
                 this.goal = room.randomType("norm");
+				this.tick = 0;
             }
             think(input) {
                 if (input.main || input.alt || this.body.master.autoOverride) {
+					this.tick = 0;
                     return {};
                 }
-                while (util.getDistance(this.goal, this.body) < this.body.SIZE * 2) {
-                    this.goal = room.randomType(Math.random() > .8 ? "nest" : "norm");
-                }
+				if(++this.tick > room.cycleSpeed){
+		            while (util.getDistance(this.goal, this.body) < this.body.SIZE * 2) {
+                    	this.goal = room.randomType(Math.random() > .8 ? "nest" : "norm");
+                	}
+				}
                	return {
                     goal: this.goal,
 					target: {
@@ -5324,12 +5328,13 @@ const Chain = Chainf;
                     this.canShoot = false
                 }
             }
-			getEnd(speedVec = {x: 0, y: 0}, lerpComp = 0){
-				const gx = this.offset * Math.cos(this.direction + this.angle + this.body.facing) + (this.length - this.width * this.settings.size / 2) * Math.cos(this.angle + this.body.facing)
-				const gy = this.offset * Math.sin(this.direction + this.angle + this.body.facing) + (this.length - this.width * this.settings.size / 2) * Math.sin(this.angle + this.body.facing)
+			getEnd(speedVec = {x: 0, y: 0}, lerpComp = 0, length){
+				length = length ?? this.length
+				const gx = this.offset * Math.cos(this.direction + this.angle + this.body.facing) + (length - this.width * this.settings.size / 2) * Math.cos(this.angle + this.body.facing)
+				const gy = this.offset * Math.sin(this.direction + this.angle + this.body.facing) + (length - this.width * this.settings.size / 2) * Math.sin(this.angle + this.body.facing)
 				return {
-					x: this.body.x + this.body.size * gx - (this.length*speedVec.x) * lerpComp,
-					y: this.body.y + this.body.size * gy - (this.length*speedVec.y) * lerpComp
+					x: this.body.x + this.body.size * gx - (length*speedVec.x) * lerpComp,
+					y: this.body.y + this.body.size * gy - (length*speedVec.y) * lerpComp
 				}
 			}
             newRecoil() {
@@ -5758,7 +5763,7 @@ const Chain = Chainf;
 				this.followGun = this.settings.FOLLOW_GUN ?? true;
 		        this.layer = this.settings.LAYER ?? this.master?.LAYER ?? 0;
 
-		        this.angle = (angle??0)+Math.PI/2
+		        this.angle = (angle??0) + Math.PI/2
 				if(this.followGun !== true && this.master && this.gun){
 					this.angle = this.master.facing + this.gun.angle
 				}
@@ -5787,7 +5792,7 @@ const Chain = Chainf;
 				let angle = this.angle;
 				if(this.followGun === true){
                 	if(this.gun){
-                	    this.startPoint = this.gun.getEnd({x:0,y:0}, 0);
+                	    this.startPoint = this.gun.getEnd({x:0,y:0}, 0, this.gun.length*1.5);
                 	    angle += this.gun.angle;
 						if(this.gun.master){
 							angle += this.gun.master.facing;
@@ -12511,10 +12516,10 @@ function flatten(data, out, playerContext = null) {
                                             button.totalDamage += amount
                                         }
                                         button.onTick = function () {
-                                            if (Date.now() - button.lastHitTime > 1000) {
+                                            if (Date.now() - button.lastHitTime > 50) {
                                                 button.lastHitTime = Date.now()
 
-                                                if (button.averageDps.length > 6) {
+                                                if (button.averageDps.length > 30) {
                                                     button.averageDps.shift()
                                                 }
                                                 button.averageDps.push(button.totalDamage)
