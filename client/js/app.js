@@ -11,6 +11,8 @@ import { gameDraw } from "./drawing/gameDraw.js"
 import { multiplayer } from "./multiplayer.js";
 import "./mainmenu.js";
 import "./joinMenu.js";
+import { config } from "./config.js";
+import { drawVignette } from "./drawing/vignette.js";
 
 if ('serviceWorker' in navigator) {
 	window.addEventListener('load', () => {
@@ -33,7 +35,7 @@ function RememberScriptingIsBannable() {
     document.addEventListener("keydown", function eh (e) {
         if (global._disconnected && global._gameStart) return;
         let key = e.which || e.keyCode;
-        if (document.getElementById("gameJoinScreen").style.top !== "-100%") return;
+        if (document.getElementById("gameJoinScreen").style.zIndex !== "-101") return;
         this.removeEventListener("keydown", eh)
         if (!global._disableEnter && key === global.KEY_ENTER && !global._gameStart) document.getElementById("startButton").click();
     })
@@ -118,7 +120,7 @@ function RememberScriptingIsBannable() {
 
 util._retrieveFromLocalStorage("nameInput")
 util._retrieveFromLocalStorage("tokenInput")
-async function _startGame(gamemodeCode, joinRoomId) {
+async function _startGame(gamemodeCode, joinRoomId, maxPlayers, maxBots) {
     if (!global.animLoopHandle) _animloop();
     document.getElementById("mainWrapper").style.zIndex = -100;
     global.playerName = util._cleanString(document.getElementById("nameInput").value || "", 25)
@@ -137,7 +139,7 @@ async function _startGame(gamemodeCode, joinRoomId) {
         window.loadingTextStatus = "Starting server..."
         window.loadingTextTooltip = ""
         console.log("Starting server...")
-        await multiplayer.startServerWorker(gamemodeCode)
+        await multiplayer.startServerWorker(gamemodeCode, undefined, undefined, maxPlayers, maxBots)
         console.log("...Server started!")
 		window.serverWorker.onerror = undefined;
         await multiplayer.wrmHost()
@@ -181,9 +183,6 @@ function _animloop() {
     global.animLoopHandle = (window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.msRequestAnimationFrame)(_animloop);
     if (nextTime < performance.now()) {
         try {
-            if (global._tankMenuColorReal >= 185) global._tankMenuColorReal = 100;
-            global._tankMenuColorReal += 0.16;
-            global._tankMenuColor = global._tankMenuColorReal | 0;
             global.player._renderv += (global.player._view - global.player._renderv) / 30;
             let ratio = getRatio();
             ctx.lineCap = "round";
@@ -194,7 +193,7 @@ function _animloop() {
                     lastPing = global.time;
                     socket.ping();
 					doingPing = true;
-                    metrics._rendertime = renderTimes;
+                    metrics._rendertime = renderTimes * (config.performanceMode ? 2 : 1);
                     renderTimes = 0;
                     metrics._updatetime = updateTimes;
                     updateTimes = 0;
@@ -215,6 +214,7 @@ function _animloop() {
                 gameDrawServerStatusText();
             }
             gameDrawDead();
+			if(!config.performanceMode&&!global._blackout) drawVignette();
             if (global._disconnected) gameDrawDisconnected();
         } catch (error) {
             gameDrawError(error)

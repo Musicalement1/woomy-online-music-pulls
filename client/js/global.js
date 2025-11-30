@@ -174,7 +174,6 @@ var global = {
 	_deathSplashOverride: 0,
 	_deathSplashChoice: 0,
 	_tankMenuColor: 0,
-	_tankMenuColorReal: 100 + Math.round(Math.random() * 70),
 	searchName: "Basic",
 	_arenaClosed: false,
 	_ratio: window.devicePixelRatio,
@@ -229,16 +228,12 @@ global.message = "";
 global.time = 0;
 
 global.player = {
-	_x: 0,
+	x: 0,
 	y: 0,
 	_cx: 0,
 	_cy: 0,
-	_vx: 0,
-	_vy: 0,
 	rendershiftx: 0,
 	_rendershifty: 0,
-	_lastvx: 0,
-	_lastvy: 0,
 	_renderx: 0,
 	_rendery: 0,
 	_renderv: 1,
@@ -251,14 +246,12 @@ global.player = {
 	_canSeeInvisible: 0,
 	_isOutsideRoom: 0,
 	// PLACEHOLDER
-	_instance: {
+	instance: {
 		"interval": 0,
 		"id": 0,
 		"index": 0,
 		"x": 0,
 		"y": 0,
-		"vx": 0,
-		"vy": 0,
 		"size": 1,
 		"facing": 0,
 		"twiggle": 0,
@@ -285,8 +278,6 @@ global.player = {
 			"y": 0,
 			"lastx": 0,
 			"lasty": 0,
-			"lastvx": 0,
-			"lastvy": 0,
 			"f": 0,
 			"h": 1,
 			"s": 1,
@@ -302,9 +293,6 @@ global.player = {
 			"length": 0
 		},
 		"turrets": [],
-		"lasers": {
-			"length": 0
-		},
 		"props": {
 			"length": 0
 		}
@@ -349,6 +337,8 @@ window._gui = {
 				return ["Body Damage", "Max Health", "Flail Speed", "Flail Resistance", "Flail Penetration", "Flail Damage", "Flail Density", "Movement Speed", "Shield Regeneration", "Shield Capacity"];
 			case 14:
 				return ["Body Damage", "Max Health", "Syringe Range", "Syringe Longevity", "Syringe Sharpness", "Syringe Damage", "Refill Time", "Movement Speed", "Shield Regeneration", "Shield Capacity"];
+			case 15:
+				return ["Body Damage", "Max Health", "Laser Length", "Laser Duration", "Laser Pierce", "Laser Damage", "Reload", "Movement Speed", "Shield Regeneration", "Shield Capacity"];	
 			default:
 				return ["Body Damage", "Max Health", "Bullet Speed", "Bullet Health", "Bullet Penetration", "Bullet Damage", "Reload", "Movement Speed", "Shield Regeneration", "Shield Capacity"];
 		}
@@ -474,6 +464,8 @@ function resizeEvent() {
 	scale *= [0.15, 0.5, 0.75, 1, 0.08][["Very Low (35%)", "Low (50%)", "Medium (75%)", "High (100%)", "PixelMode (8%)"].indexOf(config.resolutionScale)];
 	global._canvas._cv.width = global._screenWidth = window.innerWidth * scale;
 	global._canvas._cv.height = global._screenHeight = window.innerHeight * scale;
+	global._canvas.vignetteCanvas.width = global._canvas._cv.width;
+	global._canvas.vignetteCanvas.height = global._canvas._cv.height;
 	global._ratio = scale;
 	if (!global.mobile) document.getElementById('gameCanvas').focus();
 	global._screenSize = Math.min(1920, Math.max(window.innerWidth, 1280));
@@ -499,7 +491,8 @@ window.getNow = function () {
 	return Date.now() - serverStart;
 };
 window.entityArr = [];
-window.entityMap = new Map()
+window.entityMap = new Map();
+window.laserMap = new Map();
 window.getRatio = function () {
 	return Math.max(global._screenWidth / global.player._renderv, global._screenHeight / global.player._renderv / 9 * 16);
 };

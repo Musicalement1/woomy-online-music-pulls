@@ -5,7 +5,7 @@ import { rewardManager } from "./achievements.js";
 
 const initSettingsMenu = function () {
 	// Increase this value if you change something huge
-	let CURRENTVERSION = 4;
+	let CURRENTVERSION = 5;
 	let saveButtonReal = false;
 	if (localStorage.getItem("LOCALVERSION") !== CURRENTVERSION.toString() && localStorage.length !== 0) {
 		for (let key of Object.keys(localStorage).filter(store => store.includes("Woomy_"))) localStorage.removeItem(key);
@@ -239,7 +239,7 @@ config.Woomy = (() => {
 	new Setting("darkBorders", "Dark Borders", "boolean", false);
 	new Setting("rgbBorders", "Rainbow Borders", "boolean", false);
 	new Setting("glassMode", "Glass Mode", "boolean", false);
-	new Setting("pointy", "Sharp Borders", "boolean", true);
+	new Setting("pointy", "Sharp Borders", "boolean", false);
 	new Setting("inverseBorderColor", "Inverse Border Color", "boolean", false);
 	new Setting("noBorders", "No Borders", "boolean", false);
 	new Setting("tintedDamage", "Red Damage", "boolean", true);
@@ -253,6 +253,9 @@ config.Woomy = (() => {
 	new Setting("screenshotMode", "Screenshot Mode", "boolean", false);
 	new Setting("hideMiniRenders", "Hide Mini-Renders", "boolean", false);
 	new Setting("lerpSize", "Lerp Entity Sizes", "boolean", true);
+	new Setting("performanceMode", "Performance Mode", "boolean", false);
+	new Setting("animatedLasers", "Animated Lasers", "boolean", true);
+	new Setting("clientSideAim", "Fake Aim", "boolean", false)
 	new Setting("mainMenuStyle", "Menu Dark Mode", "boolean", false, enabled => {
 		const setProperties = vars => {
 			if (enabled) {
@@ -260,14 +263,14 @@ config.Woomy = (() => {
 				vars.setProperty('--backgroundBorderColor', '#f2e558');
 				vars.setProperty('--menuTextColor', '#e1e1e7');
 				vars.setProperty('--backgroundBrightness', '0.85');
-				vars.setProperty('--backgroundLink', "url(/resources/background_dark.svg)");
+				vars.setProperty('--backgroundLink', "url(/resources/background_dark_new.png)");
 				rewardManager.unlockAchievement("its_better_for_my_eyes");
 			} else {
 				vars.setProperty('--backgroundColor', '#dde6eb');
 				vars.setProperty('--backgroundBorderColor', '#c1cfd8');
 				vars.setProperty('--menuTextColor', '#000000');
 				vars.setProperty('--backgroundBrightness', '0.9');
-				vars.setProperty('--backgroundLink', "url(/resources/background_light.svg)");
+				vars.setProperty('--backgroundLink', "url(/resources/background_light_new.png)");
 			}
 		}
 		setProperties(document.querySelector(":root").style);
@@ -275,9 +278,10 @@ config.Woomy = (() => {
 	new Setting("chatMessageDuration", "Chat Message Duration", "number", 5);
 	new Setting("uiScale", "UI Scale", "number", 1.2);
 	new Setting("fontStrokeRatio", "Font Stroke Ratio", "number", 7);
-	new Setting("borderChunk", "Border Width", "number", 3.5);
-	new Setting("barChunk", "Bar Stroke Thickness", "number", 3);
+	new Setting("borderChunk", "Border Width", "number", 5.5);
+	new Setting("barChunk", "Bar Stroke Thickness", "number", 4);
 	new Setting("fontSizeBoost", "Font Size", "number", 10);
+	new Setting("vignetteStrength", "Vignette Strength", "number", 1)
 	/*new Setting("movementSmoothing", "Movement Smoothing", "number", .625, function(v){
 		this.value = Math.min(1, Math.max(0, v))
 		this.update()

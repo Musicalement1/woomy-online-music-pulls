@@ -1,8 +1,6 @@
 import { global } from "./global.js";
 import { PeerWrapper } from "./peer.js";
 
-window.connectedToWRM = false
-
 const WRM = window.location.host==="localhost"?"localhost":"woomy.online"
 const wsUrl = window.location.protocol === "http:" ? "ws://" : "wss://"
 const httpUrl = window.location.protocol === "http:" ? "http://" : "https://"
@@ -94,13 +92,45 @@ multiplayer.getHostRoomId = async function(){
 }
 multiplayer.joinRoom = async function (roomId, socket) {
 	this.playerPeer = new PeerWrapper(await window.iceServers.fetchTurnCredentials())
-	window.loadingTextStatus = "Initalizing connection..."
-    window.loadingTextTooltip = ""
-	console.log("Initialzing player peer")
+	window.loadingTextStatus = "Initializing connection..."
+	let connectingStart = Date.now();
+	let initExpected = 0;
+	let estabExpected = 0;
+	fetch(`${WRM_HTTP}/api/getConnectionTimes`).then(res => {
+		if (!res.ok) return {init: 0, estab: 0}
+		return res.json();
+	}).then(dat => {
+		initExpected = dat.init || 0;
+		estabExpected = dat.estab || 0;
+	}).catch(err => {
+		console.warn('Failed to fetch connection times:', err)
+	})
+	let connectionPhase = 'init' // 'init' | 'estab' | 'done'
+	const connectingInterval = setInterval(()=>{
+		const elapsed = ((Date.now()-connectingStart)/1000).toFixed(3)
+		let avgText = ''
+		if (connectionPhase === 'init' && initExpected) avgText = `| ${(initExpected/1000).toFixed(3)}s Average`
+		if (connectionPhase === 'estab' && estabExpected) avgText = `| ${(estabExpected/1000).toFixed(3)}s Average`
+		window.loadingTextTooltip = `This can take a minute or two | ${elapsed}s elapsed ${avgText}`
+	})
+	console.log("Initializing player peer")
 	await this.playerPeer.initialized;
-	console.log("Player peer initalized")
-    window.loadingTextStatus = "Establishing connection..."
-    window.loadingTextTooltip = ""
+	console.log("Player peer initialized")
+	connectionPhase = 'estab'
+	window.loadingTextStatus = "Establishing connection..."
+	try {
+		fetch(`${WRM_HTTP}/api/submitConnectionTime`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				type: "init",
+				time: Date.now() - connectingStart
+			})
+		})
+	} catch (err) {
+		console.warn('Failed to submit init connection time:', err)
+	}
+	connectingStart = Date.now();
 	console.log("Sending join request...")
 	let res = await fetch(`${WRM_HTTP}/api/join`, {
 		method: "POST",
@@ -112,20 +142,34 @@ multiplayer.joinRoom = async function (roomId, socket) {
 	})
 	let resText = await res.text();
 	if(!res.ok){
-    	window.loadingTextStatus = "Connection Failed"
-    	window.loadingTextTooltip = "Please reload your tab"
+		clearInterval(connectingInterval);
+		window.loadingTextStatus = "Connection Failed"
+		window.loadingTextTooltip = "Please reload your tab"
 		alert(`${resText}\nYour tab will now reload`)
 		window.location.href = window.location.href;
 		return;
 	}
 	console.log("...Join request sent", res)
 	await this.playerPeer.ready
+	try {
+		fetch(`${WRM_HTTP}/api/submitConnectionTime`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				type: "estab",
+				time: Date.now() - connectingStart
+			})
+		})
+	} catch (err) {
+		console.warn('Failed to submit estab connection time:', err)
+	}
+	clearInterval(connectingInterval);
 	this.playerPeer.onmessage = (msg) => { 
 		if(window.clientMessage) window.clientMessage(msg)
 	}
 	this.playerPeer.onclose = function(){
 		global._disconnected = 1;
-		global.message = global._disconnectReason = "The host has left the game"
+		global.message = global._disconnectReason += " (Disconnected)"
 	}
 }
 multiplayer.getRooms = async function (){
@@ -133,13 +177,15 @@ multiplayer.getRooms = async function (){
 	res = await res.json()
 	return res;
 }
-multiplayer.startServerWorker = async function (gamemodeCode, displayNameOverride, displayDescOverride) {
+multiplayer.startServerWorker = async function (gamemodeCode, displayNameOverride, displayDescOverride, maxPlayers, maxBots) {
 	window.serverWorker.postMessage({
 		type: "startServer",
 		server: {
 			suffix: gamemodeCode,
 			displayName: displayNameOverride,
-			displayDesc: displayDescOverride
+			displayDesc: displayDescOverride,
+			maxPlayers: maxPlayers,
+			maxBots: maxBots
 		}
 	});
 	let startPromise = new Promise((res, rej) => {
@@ -163,6 +209,7 @@ multiplayer.startServerWorker = async function (gamemodeCode, displayNameOverrid
 					if(multiplayer.roomWs === undefined || multiplayer.roomWs.readyState !== 1) return
 					multiplayer.roomWs.send(JSON.stringify({
 						players: data.players,
+						maxPlayers: data.maxPlayers,
 						name:  data.name||gamemodeCode,
 						desc: data.desc
 					}))

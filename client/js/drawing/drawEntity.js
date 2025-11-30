@@ -9,7 +9,6 @@ import { global } from "../global.js";
 
 const canvas2 = new OffscreenCanvas(1,1);
 const ctx2 = canvas2.getContext("2d")
-ctx2.imageSmoothingEnabled = false;
 
 const gunCache = new Map()
 const path2dCache = new Map();
@@ -1350,7 +1349,6 @@ let drawEntity = function () {
 	function makeGunPath(context, length, height, aspect, skin) {
 		// Calculate height dimensions based on aspect
 		const h = aspect > 0 ? [height * aspect, height] : [height, -height * aspect];
-
 		// Now all drawing can be done relative to origin (0,0) without angle calculations
 		switch (skin) {
 			case 0: // Normal Barrel
@@ -1500,7 +1498,23 @@ let drawEntity = function () {
 				context.lineTo(-length, -h[1]);
 				context.lineTo(length, -h[0]);
 				break;
-
+			case 19: // Laser
+				let count = length*4;
+				const maxCount = count;
+				const unit = length/count
+				context.roundRect(-length, -unit/4, length*2-unit/2, unit/2, 5); // Rod
+				while(count > 0){
+					let alpha = (maxCount - count+1)/maxCount
+					context.roundRect(
+						length*(1-alpha),
+						-height*alpha,
+						unit/2,
+						2*height*alpha,
+						5
+					)
+					count--;
+				}
+				break;
 			case 100: // Tachyon
 				break;
 			default:
@@ -1509,11 +1523,17 @@ let drawEntity = function () {
 		}
 	}
 
-	function handleAnimations(id, props) {
+	function handleAnimations(id, ogProps) {
 		let animations = _anims.get(id);
 		if (animations) {
-			// Props -> reference to global mockup.props -> deref with clone
-			props = structuredClone(props);
+			const props = []
+			for(let obj of ogProps){
+				const newObj = {}
+				for(let key2 in obj){
+					newObj[key2] = obj[key2]
+				}
+				props.push(newObj)
+			}
 			for(let animation of animations){
 				let prop = props[animation.index]
 				if(!prop) return props;
@@ -1525,8 +1545,9 @@ let drawEntity = function () {
 				prop.layer = animation.layer;
 				prop.color = animation.color;
 			}
+			return props
 		}
-		return props
+		return ogProps
 	}
 
 	const drawProp = (() => {
@@ -1741,11 +1762,11 @@ let drawEntity = function () {
 
 
 			if (path) {
-	            if (p.stroke) ctx.stroke(path);
+	            ctx.stroke(path);
 	            if (p.fill) ctx.fill(path);
 	        } else {
 	            if (p.loop) ctx.closePath();
-	            if (p.stroke) ctx.stroke();
+	            ctx.stroke();
 	            if (p.color >= 1000) {
 	                ctx.save();
 	                ctx.clip();
@@ -1789,7 +1810,7 @@ let drawEntity = function () {
 		let tankDrawX = x;
 		let tankDrawY = y;
 
-		const useOffscreenCanvas = (alpha < 1 && turretInfo === 0);
+		const useOffscreenCanvas = ((alpha < 1 || fade < 1 ) && turretInfo === 0);
 		if (useOffscreenCanvas) {
 			currentContext = ctx2;
 
@@ -1895,6 +1916,7 @@ let drawEntity = function () {
 		if (fade > 0) {
 			finalColor = mixColors(finalColor, color.dgrey, 1 - fade);
 		}
+		if (instance === global.player.instance) global._tankMenuColor = finalColor // dont include invuln bc it looks bad
 		let invulnTicker = instance.invuln && (Date.now() - instance.invuln) % 200 > 110;
 		if (invulnTicker) finalColor = mixColors(finalColor, color.vlgrey, .5);
 
@@ -1961,6 +1983,7 @@ let drawEntity = function () {
 				let pColor = getColor(p.color == -1 ? instance.color : p.color);
 				if (invulnTicker) pColor = mixColors(pColor, color.vlgrey, .5);
 				setColors(currentContext, pColor);
+				if(!p.stroke) currentContext.strokeStyle = currentContext.fillStyle;
 				if (p.layer === -2) drawProp(currentContext, p, pColor, adjustedRot, tankDrawX, tankDrawY, drawSize, m, source);
 			}
 		}
@@ -1986,6 +2009,7 @@ let drawEntity = function () {
 				let pColor = getColor(p.color == -1 ? instance.color : p.color);
 				if (invulnTicker) pColor = mixColors(pColor, color.vlgrey, .5);
 				setColors(currentContext, pColor);
+				if(!p.stroke) currentContext.strokeStyle = currentContext.fillStyle;
 				if (p.layer === -1) drawProp(currentContext, p, pColor, adjustedRot, tankDrawX, tankDrawY, drawSize, m, source);
 			}
 		}
@@ -2060,6 +2084,7 @@ let drawEntity = function () {
 				let pColor = mixColors(getColor(p.color == -1 ? instance.color : p.color), renderColor, renderBlend);
 				if (invulnTicker) pColor = mixColors(pColor, color.vlgrey, .5);
 				setColors(currentContext, pColor);
+				if(!p.stroke) currentContext.strokeStyle = currentContext.fillStyle;
 				if (p.layer === 0) drawProp(currentContext, p, pColor, adjustedRot, tankDrawX, tankDrawY, drawSize, m, source);
 			}
 		}
@@ -2085,6 +2110,7 @@ let drawEntity = function () {
 				let pColor = mixColors(getColor(p.color == -1 ? instance.color : p.color), renderColor, renderBlend);
 				if (invulnTicker) pColor = mixColors(pColor, color.vlgrey, .5);
 				setColors(currentContext, pColor);
+				if(!p.stroke) currentContext.strokeStyle = currentContext.fillStyle;
 				if (p.layer === 1) drawProp(currentContext, p, pColor, adjustedRot, tankDrawX, tankDrawY, drawSize, m, source);
 			}
 		}
@@ -2109,6 +2135,7 @@ let drawEntity = function () {
 				let pColor = mixColors(getColor(p.color == -1 ? instance.color : p.color), renderColor, renderBlend);
 				if (invulnTicker) pColor = mixColors(pColor, color.vlgrey, .5);
 				setColors(currentContext, pColor);
+				if(!p.stroke) currentContext.strokeStyle = currentContext.fillStyle;
 				if (p.layer === 2) drawProp(currentContext, p, pColor, adjustedRot, tankDrawX, tankDrawY, drawSize, m, source);
 			}
 		}

@@ -1,7 +1,7 @@
 import { util, Smoothbar } from "../util.js";
 import { global } from "../global.js";
 import { ctx, drawBar, drawGUIPolygon, drawGuiCircle, drawGuiLine, drawGuiRect, drawGuiRoundRect, drawText, measureText, _clearScreen, getGradient } from "./canvas.js"
-import { color, getColor, getZoneColor, hslToColor } from "../colors.js"
+import { color, getColor, getZoneColor, hslToColor, getColorDark } from "../colors.js"
 import { mixColors } from "../../shared/mix_colors.js";
 import { config } from "../config.js";
 import { lerp, lerpAngle } from "../lerp.js";
@@ -19,10 +19,10 @@ let compensation = function () {
 	return function () {
 		let strength = metrics._rendergap / (1000 / 30);
 		return {
-			predict: (p1, p2, v1, v2) => lerp(p1 + v1, p2 + v2, .075, 1),
-			predictFacing: (a1, a2) => lerpAngle(a1, a2, .1, 1),
-			predictExtrapolate: (p1, p2, v1, v2) => lerp(p1 + v1, p2 + v2, .075, 1),
-			predictFacingExtrapolate: (a1, a2) => lerpAngle(a1, a2, .12, 1),
+			predict: (p1, p2, v1, v2) => lerp(p1 + v1, p2 + v2, config.movementSmoothing, false),
+			predictFacing: (a1, a2) => lerpAngle(a1, a2, config.movementSmoothing, false),
+			//predictExtrapolate: (p1, p2, v1, v2) => lerp(p1 + v1, p2 + v2, config.movementSmoothing, 1),
+			//predictFacingExtrapolate: (a1, a2) => lerpAngle(a1, a2, .12, 1),
 			getPrediction: () => strength
 		}
 	};
@@ -111,8 +111,8 @@ let gameDraw = function (ratio) {
 		if (!instance.render.draws) continue;
 		let motion = compensation();
 		let isMe = instance.id === _gui._playerid;
-		instance.render.x = motion.predict(instance.render.x, Math.round(instance.x + instance.vx), 0, 0);
-		instance.render.y = motion.predict(instance.render.y, Math.round(instance.y + instance.vy), 0, 0);
+		instance.render.x = motion.predict(instance.render.x, instance.x, 0, 0);
+		instance.render.y = motion.predict(instance.render.y, instance.y, 0, 0);
 
 		let x = ratio * instance.render.x - px;
 		let y = ratio * instance.render.y - py;
@@ -121,8 +121,15 @@ let gameDraw = function (ratio) {
 			global.player.y = y;
 			global.player.rendershiftx = x
 			global.player.rendershifty = y
+			global.player.instance = instance;
 			global.player.team = instance.team;
-			instance.render.facing = (!instance.twiggle && !global._died && !global._forceTwiggle) ? Math.atan2(global._target._y - y, global._target._x - x) : motion.predictFacing(instance.render.facing, instance.facing);
+
+			if(config.clientSideAim === true){
+				instance.render.facing = (!instance.twiggle && !global._died && !global._forceTwiggle) ? Math.atan2(global._target._y - y, global._target._x - x) : motion.predictFacing(instance.render.facing, instance.facing);
+			} else {
+				instance.render.facing = motion.predictFacing(instance.render.facing, instance.facing);
+			}
+
 			// Save information about the player
 			global.player._nameColor = instance.nameColor
 			//console.log(mockups[instance.index])
@@ -145,6 +152,64 @@ let gameDraw = function (ratio) {
 		if (!config.screenshotMode) frameplate.push([x, y, instance, ratio, global.player._canSeeInvisible ? instance.alpha + .5 : instance.alpha]);
 		ctx.globalAlpha = 1;
 	};
+
+	// LASERS
+	for(let [id, laser] of laserMap){
+		let shakeAmount = -2.5 + 5 * Math.random()
+	    const lx1 = ratio * (laser.x+shakeAmount*Math.random()) - px;
+	    const ly1 = ratio * (laser.y+shakeAmount*Math.random()) - py;
+	    const lx2 = ratio * (laser.x2+shakeAmount*Math.random()) - px;
+	    const ly2 = ratio * (laser.y2+shakeAmount*Math.random()) - py;
+	
+	    const dx = lx2 - lx1;
+	    const dy = ly2 - ly1;
+	    const len = Math.sqrt(dx * dx + dy * dy);
+	
+	    if(len === 0) continue;
+	
+		const laserColor = getColor(laser.color);
+		const darkColor = getColorDark(laserColor);
+	    const angle = Math.atan2(dy, dx);
+	    let width = laser.width * ratio * laser.fade;
+	
+	    ctx.save();
+	    ctx.translate(lx1, ly1);
+	    ctx.rotate(angle);
+	    if (config.performanceMode === false && config.animatedLasers === true) {
+	        const layers = 6;
+	        for(let i = 0; i < layers; i++){
+	            const t = i / (layers - 1);
+	            const layerWidth = (width * (1+(i/layers)*Math.random())) * (1 - t * 0.7);
+	            let lcolor;
+	            if(t < 0.5) {
+					const blend = Math.min(1, (t*2)/(config.borderChunk/4));
+	                lcolor = mixColors(darkColor, color.white, blend);
+	            } else {
+	                const blend = (t - 0.5) * 2;
+	                lcolor = mixColors(color.white, laserColor, blend);
+	            }
+			
+	            ctx.fillStyle = lcolor;
+	            ctx.globalAlpha = .25 + 1/layers
+				ctx.beginPath();
+				ctx.arc(len, 0, layerWidth/1.75, 0, Math.PI * 2);
+				ctx.arc(0, 0, layerWidth/1.25, 0, Math.PI * 2);
+	            ctx.rect(0, -layerWidth / 2, len, layerWidth);
+				ctx.fill();
+			}
+	    } else {
+	        ctx.fillStyle = laserColor
+	        ctx.globalAlpha = 0.35;
+			ctx.beginPath()
+	        ctx.rect(0, -width / 2, len, width);
+	        ctx.arc(len, 0, width/1.5, 0, Math.PI*2);
+			ctx.arc(0, 0, width, 0, Math.PI*2)
+			ctx.fill();
+	    }
+		ctx.restore();
+	}
+
+	// NAME PLATES
 	ctx.shadowBlur = 0;
 	ctx.shadowOffsetX = 0;
 	ctx.shadowOffsetY = 0;
@@ -152,7 +217,6 @@ let gameDraw = function (ratio) {
 		drawHealth(...frameplate[i]);
 		ctx.globalAlpha = 1;
 	};
-
 
 	// BLACKOUT
 	if (global._blackout) {
@@ -168,6 +232,27 @@ let gameDraw = function (ratio) {
 		darknessCtx.fillRect(0, 0, darknessCanvas.width, darknessCanvas.height);
 		darknessCtx.globalCompositeOperation = "lighter";
 		darknessCtx.translate(global._screenWidth / 2 / divisor, global._screenHeight / 2 / divisor);
+
+		for(let [id, laser] of laserMap){
+	    	const lx1 = ratio * laser.x - px;
+	    	const ly1 = ratio * laser.y - py;
+	    	const lx2 = ratio * laser.x2 - px;
+	    	const ly2 = ratio * laser.y2 - py;
+	    	const laserColor = getColor(laser.color);
+			const ran = Math.random();
+	    	darknessCtx.save();
+			darknessCtx.lineWidth = (laser.width * (1.25 + .1 * ran)) * ratio * laser.fade;
+	    	darknessCtx.strokeStyle = laserColor;
+	    	darknessCtx.globalAlpha = .08 + .01 * ran
+			darknessCtx.beginPath();
+			darknessCtx.arc(lx1, ly1, darknessCtx.lineWidth/1.5, 0, Math.PI * 2);
+			darknessCtx.moveTo(lx1, ly1);
+			darknessCtx.lineTo(lx2, ly2);
+			darknessCtx.arc(lx2, ly2, darknessCtx.lineWidth, 0, Math.PI * 2);
+			darknessCtx.stroke();
+			darknessCtx.restore();
+		}
+
 		for (let i = 0; i < entityArr.length; i++) {
 			let instance = entityArr[i],
 				x = ratio * instance.render.x - px,
@@ -232,7 +317,6 @@ let gameDraw = function (ratio) {
 		}else{
 			ctx.globalAlpha = 1;
 		}
-		ctx.imageSmoothingEnabled = false;
 		ctx.globalCompositeOperation = "multiply";
 		ctx.drawImage(darknessCanvas, 0, 0, ctx.canvas.width, ctx.canvas.height);
 		ctx.globalCompositeOperation = "source-over";
@@ -460,11 +544,9 @@ let gameDraw = function (ratio) {
 						drawText("Update Rate: " + metrics._updatetime + "Hz", x + len, y, 14, color.guiwhite, "right");
 						if (global._debug > 3) {
 							y -= 16
-							drawText(`Server MEM usage: ${metrics._serverMemUsage.toFixed(2)}%`, x + len, y, 14, metrics._serverMemUsage > 90 ? color.red : metrics._serverMemUsage > 70 ? color.orange : color.guiwhite, "right")
-							y -= 16
-							drawText(`Server CPU usage: ${metrics._serverCpuUsage.toFixed(2)}%`, x + len, y, 14, metrics._serverCpuUsage > 80 ? color.red : metrics._serverCpuUsage > 65 ? color.orange : color.guiwhite, "right")
-							y -= 16
 							drawText(`${mockups.fetchedMockups}/${mockups.totalMockups} (${((mockups.fetchedMockups / mockups.totalMockups) * 100).toFixed(2)}%) Mockups`, x + len, y, 14, color.guiwhite, "right")
+							y -= 16
+							drawText(`Movement Smoothing: ${config.movementSmoothing.toFixed(3)}`, x + len, y, 14, color.guiwhite, "right")
 						}
 					}
 				}
@@ -574,7 +656,7 @@ let gameDraw = function (ratio) {
 					global.canUpgrade = 1;
 					let spacing = 10,
 						x = 20,
-						colorIndex = global._tankMenuColor,
+						tankColor = global._tankMenuColor,//global._tankMenuColor,
 						i = 0,
 						y = 20,
 						x2 = x,
@@ -583,7 +665,7 @@ let gameDraw = function (ratio) {
 						ticker = 0,
 						len = alcoveSize * .45, //100
 						height = len;
-					upgradeSpin += .01;
+					upgradeSpin += .0025
 					for (let model of _gui._upgrades) {
 						if (y > y2) y2 = y - 60;
 						x3 = x * 2 + 105;
@@ -591,23 +673,21 @@ let gameDraw = function (ratio) {
 						y *= glide
 						global.clickables.upgrade.place(i++, y, x, len, height);
 						ctx.globalAlpha = .5;
-						ctx.fillStyle = getColor(colorIndex > 185 ? colorIndex - 85 : colorIndex);
+						ctx.fillStyle = tankColor;
 						config.roundUpgrades ? drawGuiRoundRect(y, x, len, height, 10) : drawGuiRect(y, x, len, height);
-						ctx.globalAlpha = .175;
-						ctx.fillStyle = getColor(-10 + (colorIndex++ - (colorIndex > 185 ? 85 : 0)));
+						ctx.fillStyle = mixColors(tankColor, color.white, .5);
 						config.roundUpgrades ? drawGuiRoundRect(y, x, len, .6 * height, 4) : drawGuiRect(y, x, len, .6 * height);
-						ctx.fillStyle = color.black;
-						config.roundUpgrades ? drawGuiRoundRect(y, x + .6 * height, len, .4 * height, 4) : drawGuiRect(y, x + .6 * height, len, .4 * height);
+						ctx.fillStyle = "black";
+						ctx.globalAlpha = .25;
 						if (!global._died && !global._disconnected) {
 							let tx = Math.pow((global.guiMouse.x) - (y + height / 2), 2),
 								ty = Math.pow((global.guiMouse.y) - (x + len / 2), 2);
 							if (Math.sqrt(tx + ty) < height * .55) {
-								ctx.globalAlpha = .6;
 								config.roundUpgrades ? drawGuiRoundRect(y, x, len, height, 10) : drawGuiRect(y, x, len, height);
 							}
 						}
 						ctx.globalAlpha = 1;
-						let picture = getEntityImageFromMockup(model, _gui._color),
+						let picture = getEntityImageFromMockup(model, tankColor),
 							position = mockups.get(model).position,
 							scale = .6 * len / position.axis,
 							xx = y + .5 * height - scale * position.middle.x * Math.cos(upgradeSpin),

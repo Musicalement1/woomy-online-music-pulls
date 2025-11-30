@@ -27,9 +27,14 @@ class PeerWrapper {
 	constructor(iceServersParam) {
 		const servers = window.iceServers.concat(iceServersParam)
 		console.log(servers)
-		this.peer = new Peer({config:{
-			iceServers: servers
-		}});
+		this.peer = new Peer({
+            host: window.location.host==="localhost"?"0.peerjs.com":"signaling.woomy.online",
+			path: window.location.host==="localhost"?"/":"/peerjs",
+			port: "443",
+			config:{
+				iceServers: servers
+			}
+		});
 		this.conn = null;
 		this.id = null;
 		this.onmessage = undefined;
@@ -40,6 +45,7 @@ class PeerWrapper {
 				this.id = id;
 				resolve();
 			});
+			this.peer.on("disconnected", console.error)
 			this.peer.on('error', (err)=>{
 				console.log("Error initlaizing peer")
 				reject(err)
@@ -61,7 +67,7 @@ class PeerWrapper {
 			console.log(`[Peer ${this.id}] Destroying peer, connection took too long`)
 			this.destroy();
 			this._readyRej?.("Connection took too long")
-		}, 15000)
+		}, 120000)
 		conn.on('open', () => {
 			this.conn = conn;
 			this._setupConn(conn);

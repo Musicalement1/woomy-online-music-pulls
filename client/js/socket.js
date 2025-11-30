@@ -12,6 +12,7 @@ import { fasttalk } from "./fasttalk.js";
 import { lerp } from "./lerp.js";
 import { ASSET_MAGIC, loadAsset, setAsset } from "../../shared/assets.js";
 import "./consoleCommands.js"
+import { drawVignette } from "./drawing/vignette.js";
 
 
 
@@ -54,7 +55,7 @@ const convert = {
 		},
 		take: amount => {
 			convert.reader.index += amount;
-			if (index > convert.reader.crawlData.length) {
+			if (convert.reader.index > convert.reader.crawlData.length) {
 				console.error(convert.reader.crawlData);
 				throw new Error("Trying to crawl past the end of the provided data!");
 			}
@@ -65,6 +66,7 @@ const convert = {
 		}
 	},
 
+	lasers: convertLasers,
 	data: convertData,
 	fastGui: convertFastGui,
 	slowGui: convertSlowGui,
@@ -181,15 +183,11 @@ const process = function () {
 					entity.render.draws = true;
 					entity.render.lastx = entity.x;
 					entity.render.lasty = entity.y;
-					entity.render.lastvx = entity.vx;
-					entity.render.lastvy = entity.vy;
 				}
 				const flags = convert.reader.next();
 				entity.index = convert.reader.next();
 				entity.x = isNew?convert.reader.next():lerp(entity.render.lastx, convert.reader.next(), config.movementSmoothing);
 				entity.y = isNew?convert.reader.next():lerp(entity.render.lasty, convert.reader.next(), config.movementSmoothing);
-				entity.vx = 0;//convert.reader.next();
-				entity.vy = 0;//convert.reader.next();
 				entity.size = convert.reader.next();
 				entity.facing = convert.reader.next();
 				entity.twiggle = (flags & 1);
@@ -250,10 +248,8 @@ const process = function () {
 						expandsWithDeath: entity.drawsHealth,
 						x: entity.x,
 						y: entity.y,
-						lastx: entity.x - metrics._rendergap * config.roomSpeed * (1000 / 30) * entity.vx,
-						lasty: entity.y - metrics._rendergap * config.roomSpeed * (1000 / 30) * entity.vy,
-						lastvx: entity.vx,
-						lastvy: entity.vy,
+						lastx: entity.x,
+						lasty: entity.y,
 						facing: entity.facing,
 						h: entity.health,
 						s: entity.shield,
@@ -326,6 +322,59 @@ const process = function () {
 		return unpacking.new(z);
 	};
 }();
+
+function convertLasers(){
+	for (let i = 0, len = convert.reader.next(); i < len; i++) {
+		const id = convert.reader.next();
+		let laser = laserMap.get(id);
+		if(!laser){
+			laser = {
+				id: id,
+				x: convert.reader.next(),
+				_x: 0,
+				y: convert.reader.next(),
+				_y: 0,
+				x2: convert.reader.next(),
+				_x2: 0,
+				y2: convert.reader.next(),
+				_y2: 0,
+				color: convert.reader.next(),
+				width: 0,
+				_width: convert.reader.next(),
+				maxDur: convert.reader.next(),
+				dur: convert.reader.next(),
+				shouldDie: 0,
+				fade: 1,
+			}
+		}else{
+			laser._x = convert.reader.next();
+			laser.x = lerp(laser.x, laser._x, config.movementSmoothing)
+			laser._y = convert.reader.next();
+			laser.y = lerp(laser.y, laser._y, config.movementSmoothing)
+			laser._x2 = convert.reader.next();
+			laser.x2 = lerp(laser.x2, laser._x2, config.movementSmoothing)
+			laser._y2 = convert.reader.next();
+			laser.y2 = lerp(laser.y2, laser._y2, config.movementSmoothing)
+			laser.color = convert.reader.next();
+			laser._width = convert.reader.next();
+			laser.width = lerp(laser.width, laser._width, config.movementSmoothing)
+			laser.maxDur = convert.reader.next();
+			laser.dur = convert.reader.next();
+		}
+		laser.shouldDie = 0;
+		laserMap.set(id, laser);
+	}
+
+	for(let [_, laser] of laserMap){
+		laser.shouldDie++;
+		if(laser.shouldDie > 1){
+			laser.fade = lerp(laser.fade, 0, config.movementSmoothing)
+			if(laser.fade < 0.01){
+				laserMap.delete(laser.id);
+			}
+		}
+	}
+}
 
 function convertData() {
 	const updatedEntityIds = new Set(); // Keep track of IDs received in this packet
@@ -696,19 +745,20 @@ let socketInit = function () {
 						metrics._rendergap = cam.time - global.player._lastUpdate;
 						global.player._lastUpdate = cam.time;
 						convert.reader.set(m, 5);
+						const currentFP = Math.max(1, metrics._rendergap / Math.max(1, 1000/metrics._rendertime));
+						let perFrameAlpha = Math.max(0, .95 / currentFP);
+						config.movementSmoothing = lerp(config.movementSmoothing, perFrameAlpha, 0.05);
 						convert.fastGui();
+						convert.lasers();
 						convert.data();
-						global.player._cx = lerp(global.player._cx||cam.x, cam.x, config.movementSmoothing);
-						global.player._cy = lerp(global.player._cy||cam.y, cam.y, config.movementSmoothing);
-						global.player._lastvx = global.player._vx;
-						global.player._lastvy = global.player._vy;
-						global.player._vx = global._died ? 0 : cam.vx;
-						global.player._vy = global._died ? 0 : cam.vy;
+						// If the camera is slightly slower it gives the feeling that the player is moving more/faster
+						// Its better if the camera is behind the real spot because it has to "react" which has a certain feel
+						global.player._cx = lerp(global.player._cx||cam.x, cam.x, config.movementSmoothing*.7);
+						global.player._cy = lerp(global.player._cy||cam.y, cam.y, config.movementSmoothing*.7);
 						global.player._view = cam.FoV;
 						if (isNaN(global.player._renderv) || global.player._renderv === 0) global.player._renderv = 2000;
 						metrics._lastlag = metrics._lag;
 						metrics._lastuplink = Date.now()
-						config.movementSmoothing = lerp(config.movementSmoothing, Math.max(.5, Math.min(1, (1000/metrics._rendertime)/metrics._rendergap)), .05)
 					//} //else logger.info("This is old data! Last given time: " + global.player._time + "; offered packet timestamp: " + cam.time + ".");
 					socket.controls.talk();
 					updateTimes++;
@@ -719,6 +769,10 @@ let socketInit = function () {
 					//convert.begin(m);
 					//convert.broadcast();
 				}
+					break;
+				case "v": 
+					global.vignetteScalarSocket = m[0]
+					global.vignetteColorSocket = m[1]
 					break;
 				case "closeSocket":
 					multiplayer.playerPeer.destroy();
@@ -814,18 +868,22 @@ let socketInit = function () {
 				case "am":
 					_anims.clear();
 					for(let i = 0; i < m.length; i+=9){
+						let index = i;
 						const prev = _anims.get(m[i]);
 						const arr = prev || [];
 						if(!prev) _anims.set(m[i], arr)
 						arr.push({
-							index: m[i+1],
-							size: m[i+2],
-							x: m[i+3],
-							y: m[i+4],
-							angle: m[i+5],
-							layer: m[i+6],
-							shape: typeof m[i+7] === "string" ? JSON.parse(m[i+7]) : m[i+7], // needed for dot to dots
-							color: m[i+8]
+							index: m[++index],
+							size: m[++index],
+							x: m[++index],
+							y: m[++index],
+							angle: m[++index],
+							layer: m[++index],
+							shape: m[++index] === ASSET_MAGIC ? loadAsset(ASSET_MAGIC, m[++index]) :
+								typeof m[index] === "string" ? JSON.parse(m[index]) :
+									m[index],
+							color: m[++index] === ASSET_MAGIC ? loadAsset(ASSET_MAGIC, m[++index]) :
+								m[index]
 						})
 					}
 					break;

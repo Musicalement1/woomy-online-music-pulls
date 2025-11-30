@@ -1,5 +1,5 @@
 let config = {
-	CLIENT_PROTOCOL_VERSION: 1,
+	CLIENT_PROTOCOL_VERSION: 2,
 	expectedMaxSkillLevel: 9,
 	screenshotMode: 0,
 	borderChunk: 5,
@@ -12,7 +12,7 @@ let config = {
 	pointy: true,
 	resolutionScale: 1,
 	fontSizeBoost: 10,
-	movementSmoothing: .625,
+	movementSmoothing: 1,
 	fontStrokeRatio: 4.5,
 	uiScale: 1.2,
 	neon: 0,
