@@ -58,15 +58,15 @@ function resetRoomInfo() {
 	gamemodeDescription = "Select a room to join other players or click create and host a room for others to join."
 }
 function updateRoomInfo() {
-	roomInfoPlayerCount.innerHTML = `${playerCount}${maxPlayerCount!==99?`/${maxPlayerCount}`:""}`;
-	roomInfoGamemode.innerHTML = gamemodeName;
+	roomInfoPlayerCount.innerText = `${playerCount}${maxPlayerCount!==99?`/${maxPlayerCount}`:""}`;
+	roomInfoGamemode.innerText = gamemodeName;
 	if (gamemodeImage === "") {
 		roomInfoGamemodeImage.style.display = "none";
 	} else {
 		roomInfoGamemodeImage.style.display = "block";
 	}
 	roomInfoGamemodeImage.src = gamemodeImage;
-	roomInfoGamemodeDescription.innerHTML = gamemodeDescription
+	roomInfoGamemodeDescription.innerText = gamemodeDescription
 	if(maxPlayers < 1){
 		roomInfoSettingsMaxPlayerInput.value = 1;
 		maxPlayers = 1;
@@ -432,7 +432,7 @@ function showGamemodes() {
 		}
 
 		// Gamemode 
-		ele.children[0].children[0].innerHTML = gamemode.name;
+		ele.children[0].children[0].innerText = gamemode.name;
 
 		// Player count
 		ele.children[0].children[1].style.display = "none";
@@ -483,13 +483,13 @@ async function showRooms() {
 		}
 
 		// Gamemode 
-		ele.children[0].children[0].innerHTML = gamemodeInfo.name || gamemodeInfo;
+		ele.children[0].children[0].innerText = gamemodeInfo.name || gamemodeInfo;
 
 		// Player count
-		ele.children[0].children[1].innerHTML = `Players: ${room.players}${room.maxPlayers!==99?`/${room.maxPlayers}`:""}`;
+		ele.children[0].children[1].innerText = `Players: ${room.players}${room.maxPlayers!==99?`/${room.maxPlayers}`:""}`;
 
 		// Room Code
-		ele.children[0].children[2].innerHTML = room.id;
+		ele.children[0].children[2].innerText = room.id;
 
 		ele.onclick = function () {
 			playerCount = room.players;
@@ -514,8 +514,8 @@ joinSearch.oninput = async function () {
 		showGamemodes()
 		for (let ele of gamemodeEles) {
 			if (
-				ele.children[0].children[0].innerHTML.toLowerCase().includes(term) === false &&
-				ele.children[0].children[0].innerHTML.toLowerCase().replaceAll(" ", "").includes(term) === false
+				ele.children[0].children[0].innerText.toLowerCase().includes(term) === false &&
+				ele.children[0].children[0].innerText.toLowerCase().replaceAll(" ", "").includes(term) === false
 			) {
 				ele.remove();
 			}
@@ -525,12 +525,12 @@ joinSearch.oninput = async function () {
 		await showRooms()
 		for (let ele of roomEles) {
 			if (
-				(ele.children[0].children[0].innerHTML.toLowerCase().includes(term) === false &&  // Gamemode Name
-					ele.children[0].children[0].innerHTML.toLowerCase().replaceAll(" ", "").includes(term) === false) &&
-				(ele.children[0].children[1].innerHTML.toLowerCase().includes(term) === false && // Player Count
-					ele.children[0].children[1].innerHTML.toLowerCase().replaceAll(" ", "").includes(term) === false) &&
-				(ele.children[0].children[2].innerHTML.toLowerCase().includes(term) === false && // Room Code
-					ele.children[0].children[2].innerHTML.toLowerCase().replaceAll(" ", "").includes(term) === false)
+				(ele.children[0].children[0].innerText.toLowerCase().includes(term) === false &&  // Gamemode Name
+					ele.children[0].children[0].innerText.toLowerCase().replaceAll(" ", "").includes(term) === false) &&
+				(ele.children[0].children[1].innerText.toLowerCase().includes(term) === false && // Player Count
+					ele.children[0].children[1].innerText.toLowerCase().replaceAll(" ", "").includes(term) === false) &&
+				(ele.children[0].children[2].innerText.toLowerCase().includes(term) === false && // Room Code
+					ele.children[0].children[2].innerText.toLowerCase().replaceAll(" ", "").includes(term) === false)
 			) {
 				ele.remove()
 			}
