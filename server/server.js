@@ -7145,6 +7145,10 @@ const Chain = Chainf;
                         this.SIZE += .15;
                         this.DAMAGE += 2;
                         break;
+                    case "exponennuke":
+                        this.SIZE *= 1.03;
+                        this.DAMAGE *= 1.03;
+                        break;
                     case "fatNuke":
                         this.SIZE += 7;
                         this.DAMAGE += 20;
@@ -7174,6 +7178,21 @@ const Chain = Chainf;
                         this.SIZE += .21; // + .026 * Math.random();
                         this.DAMAGE += .225;
                         this.penetration += .04;
+                        if (this.velocity.x > 0) this.velocity.x -= .005;
+                        if (this.velocity.y > 0) this.velocity.y -= .005;
+                        break;
+                    case "imploder":
+                        if (this.counter == undefined) {this.counter = -50}
+                        this.counter += 1
+                        if (this.counter != 0) {this.SIZE = (this.counter * 0.1) ** 2}
+                        this.DAMAGE += .5
+                        this.penetration += .04
+                        if (this.velocity.x > 0) this.velocity.x -= .005;
+                        if (this.velocity.y > 0) this.velocity.y -= .005;
+                        break;
+                    case "antiGrow":
+                        if (this.SIZE - .2  > 0) {this.SIZE -= .2}
+                        this.penetration += .04
                         if (this.velocity.x > 0) this.velocity.x -= .005;
                         if (this.velocity.y > 0) this.velocity.y -= .005;
                         break;
